@@ -1,6 +1,6 @@
 #Load configuration from config.psd1
-Get-Content .\cosmos-db-config.psd1
-$config = Import-PowerShellDataFile .\cosmos-db-config.psd1
+Get-Content .\config.psd1
+$config = Import-PowerShellDataFile .\config.psd1
 $config.AllNodes
 
 az login
