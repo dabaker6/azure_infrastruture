@@ -3,7 +3,12 @@ Get-Content .\config.psd1
 $config = Import-PowerShellDataFile .\config.psd1
 $config.AllNodes
 
-az login
+$userObjectId = (az ad signed-in-user show --query "id" -o tsv 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
+if ([string]::IsNullOrEmpty($userObjectId)) {
+    Write-Host "Error: Not authenticated with Azure. Please run: az login"
+    exit 1
+}
+
 Write-Host "Assigning API identity and granting access to Cosmos DB..."
 
 $API_PRINCIPAL_ID=(az webapp identity assign `
@@ -25,6 +30,6 @@ az cosmosdb sql role assignment create `
   
 Write-Host "Print Role Assignments for Cosmos DB..."
 
-az cosmosdb sql role assignment list --account-name "dev-246" --resource-group "rg-dev-personal-website" --query "[].[principalId,roleDefinitionId]" -o tsv
+az cosmosdb sql role assignment list --account-name "dev-246" --resource-group "rg-dev-personal-website" --query "[].[principalId,roleDefinitionId]" --output tsv
 
 Write-Host "API access to Cosmos DB configured successfully."

@@ -3,7 +3,11 @@ Get-Content .\config.psd1
 $config = Import-PowerShellDataFile .\config.psd1
 $config.AllNodes
 
-az login
+$userObjectId = (az ad signed-in-user show --query "id" -o tsv 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
+if ([string]::IsNullOrEmpty($userObjectId)) {
+    Write-Host "Error: Not authenticated with Azure. Please run: az login"
+    exit 1
+}
 
 Write-Host "Creating Cosmos DB database..."
 
