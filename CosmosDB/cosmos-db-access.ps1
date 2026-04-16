@@ -16,6 +16,14 @@ $API_PRINCIPAL_ID=(az webapp identity assign `
   --resource-group $config.RESOURCE_GROUP `
   --query principalId -o tsv)
 
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "$([char]0x2713) API identity assigned: $API_PRINCIPAL_ID"
+}
+else {
+    Write-Host "Error: Failed to assign API identity"
+    exit 1
+}
+
 # Grant the API read access to Cosmos DB
 Write-Host "Granting API read access to Cosmos DB..."
 
@@ -27,9 +35,29 @@ az cosmosdb sql role assignment create `
   --role-definition-name $config.RBAC_ROLE_NAME `
   --principal-id $API_PRINCIPAL_ID `
   --scope $SCOPE
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "$([char]0x2713) API read access to Cosmos DB granted successfully."
+}
+else {
+    Write-Host "Error: Failed to assign API role assignment for Cosmos DB"
+    exit 1
+}  
   
 Write-Host "Print Role Assignments for Cosmos DB..."
 
-az cosmosdb sql role assignment list --account-name "dev-246" --resource-group "rg-dev-personal-website" --query "[].[principalId,roleDefinitionId]" --output tsv
+az cosmosdb sql role assignment list `
+  --account-name $config.ACCOUNT_NAME `
+  --resource-group $config.RESOURCE_GROUP `
+  --query "[].[principalId,roleDefinitionId]" `
+  --output tsv
 
-Write-Host "API access to Cosmos DB configured successfully."
+if ($LASTEXITCODE -eq 0) {
+    Write-Host ""
+}
+else {
+    Write-Host "Error: Failed to list role assignments for Cosmos DB"
+    exit 1
+}  
+
+Write-Host "$([char]0x2713) API access to Cosmos DB configured successfully."

@@ -16,6 +16,14 @@ az cosmosdb sql database create `
   --resource-group $config.RESOURCE_GROUP `
   --name $config.DATABASE_NAME  
 
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "$([char]0x2713) Cosmos DB database created: $config.DATABASE_NAME"
+}
+else {
+    Write-Host "Error: Failed to create Cosmos DB database"
+    exit 1
+}
+
 Write-Host "Creating Cosmos DB container..."
 
 az cosmosdb sql container create `
@@ -25,4 +33,11 @@ az cosmosdb sql container create `
   --name $config.CONTAINER_NAME `
   --partition-key-path "/id"
 
-Write-Host "Cosmos DB setup complete."
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "$([char]0x2713) Cosmos DB container created: $config.CONTAINER_NAME"
+}
+else {
+    Write-Host "Error: Failed to create Cosmos DB container"
+    exit 1
+}
+Write-Host "$([char]0x2713) Cosmos DB setup complete."
