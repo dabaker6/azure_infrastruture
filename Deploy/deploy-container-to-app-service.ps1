@@ -17,6 +17,22 @@ function New-UniqueString {
     return $hashString.Substring(0, 13)
 }
 
+function Select-FilePath {
+    param (
+        [string]$Description = "Select a file"
+    )
+    Add-Type -AssemblyName System.Windows.Forms
+    $fileBrowser = New-Object System.Windows.Forms.OpenFileDialog
+    $fileBrowser.Title = $Description        
+    $fileBrowser.InitialDirectory = Get-Location    
+    if ($fileBrowser.ShowDialog() -eq "OK") {
+        return $fileBrowser.FileName
+    } else {
+        Write-Host "No file selected. Exiting script."
+        exit
+    }
+}
+
 #Load configuration from config.psd1
 Get-Content .\config.psd1
 $config = Import-PowerShellDataFile .\config.psd1
@@ -131,7 +147,6 @@ Write-Host "Assigning 'AcrPull' role to Web App's Managed Identity for ACR acces
 
 $maxRetries = 10
 $delaySeconds = 5
-$success = $false
 
 for ($i = 1; $i -le $maxRetries; $i++) {
 
@@ -191,11 +206,22 @@ else {
 
 ##App settings for Flask app
 
+######
+$configPath = Select-FilePath -Description "Select the JSON file containing application settings for the Flask app (key-value pairs)"
+$appSettings = Get-Content $configPath | ConvertFrom-Json
+
+# Convert JSON to key=value format
+$settingsArray = @()
+
+$appSettings.PSObject.Properties | ForEach-Object {
+    $settingsArray += "$($_.Name)=$($_.Value)"
+}
+
 Write-Host "Configuring Web App application settings for Flask app..."
 az webapp config appsettings set `
     --resource-group $config.RESOURCE_GROUP `
     --name $config.FLASK_APP_NAME `
-    --settings "SCM_DO_BUILD_DURING_DEPLOYMENT=true" "WEBSITES_ENABLE_APP_SERVICE_STORAGE=false" "MATCHES_API_BASE_URL=$($config.API_APP_NAME)"
+    --settings $settingsArray
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "$([char]0x2713) Web App application settings updated"       
