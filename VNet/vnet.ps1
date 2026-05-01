@@ -3,6 +3,14 @@ Get-Content .\config.psd1
 $config = Import-PowerShellDataFile .\config.psd1
 $config.AllNodes
 
+function Test-ArrayContains {
+    param(
+        [string[]]$Array,
+        [string]$Value
+    )
+    return $Array -contains $Value
+}
+
 $userObjectId = (az ad signed-in-user show --query "id" -o tsv 2>&1) | Where-Object { $_ -notmatch 'ERROR' } | Select-Object -First 1
 if ([string]::IsNullOrEmpty($userObjectId)) {
     Write-Host "Error: Not authenticated with Azure. Please run: az login"
@@ -11,82 +19,142 @@ if ([string]::IsNullOrEmpty($userObjectId)) {
 
 Write-Host "Create the VNet with an address space"
 
-az network vnet create `
-  --name $config.VNET_NAME `
-  --resource-group $config.RESOURCE_GROUP `
-  --address-prefix 10.0.0.0/16
+Write-Host "Check if VNet exists..."
+
+az network vnet show `
+    --name $config.VNET_NAME `
+    --resource-group $config.RESOURCE_GROUP 2>$null | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) VNet created: $config.VNET_NAME with address space"
+    Write-Host "VNet '$($config.VNET_NAME)' already exists."
 }
-else {
+else 
+{
+    az network vnet create `
+      --name $config.VNET_NAME `
+      --resource-group $config.RESOURCE_GROUP `
+      --address-prefix 10.0.0.0/16
+    
+    if ($LASTEXITCODE -eq 0) {
+    Write-Host "$([char]0x2713) VNet created: $config.VNET_NAME with address space"
+    }
+    else 
+    {
     Write-Host "Error: Failed to create VNet"
     exit 1
-}  
+    }
+} 
 
 write-Host "Create a subnet for Flask"
 
-az network vnet subnet create `
-  --name $config.FLASK_SUBNET_NAME `
-  --resource-group $config.RESOURCE_GROUP `
-  --vnet-name $config.VNET_NAME `
-  --address-prefix 10.0.1.0/24
+Write-Host "Check if Flask subnet exists..."
+
+az network vnet subnet show `
+    --name $config.FLASK_SUBNET_NAME `
+    --resource-group $config.RESOURCE_GROUP `
+    --vnet-name $config.VNET_NAME 2>$null | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) Flask subnet created: $config.FLASK_SUBNET_NAME"
+Write-Host "Subnet '$($config.FLASK_SUBNET_NAME)' already exists in VNet '$($config.VNET_NAME)'."
 }
-else {
-    Write-Host "Error: Failed to create Flask subnet"
-    exit 1
-}  
+else 
+{  
+
+    az network vnet subnet create `
+    --name $config.FLASK_SUBNET_NAME `
+    --resource-group $config.RESOURCE_GROUP `
+    --vnet-name $config.VNET_NAME `
+    --address-prefix $config.FLASK_SUBNET_PREFIX
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "$([char]0x2713) Flask subnet created: $config.FLASK_SUBNET_NAME"
+    }
+    else {
+        Write-Host "Error: Failed to create Flask subnet"
+        exit 1
+    }  
+}
+
 
 Write-Host "Create a subnet for the .NET API"
 
-az network vnet subnet create `
-  --name $config.API_SUBNET_NAME `
-  --resource-group $config.RESOURCE_GROUP `
-  --vnet-name $config.VNET_NAME `
-  --address-prefix 10.0.2.0/24
+Write-Host "Check if API subnet exists..."
+
+az network vnet subnet show `
+    --name $config.API_SUBNET_NAME `
+    --resource-group $config.RESOURCE_GROUP `
+    --vnet-name $config.VNET_NAME 2>$null | Out-Null
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) API subnet created: $config.API_SUBNET_NAME"
+Write-Host "Subnet '$($config.API_SUBNET_NAME)' already exists in VNet '$($config.VNET_NAME)'."
 }
-else {
-    Write-Host "Error: Failed to create API subnet"
-    exit 1
-}  
+else 
+{   
+    az network vnet subnet create `
+    --name $config.API_SUBNET_NAME `
+    --resource-group $config.RESOURCE_GROUP `
+    --vnet-name $config.VNET_NAME `
+    --address-prefix $config.API_SUBNET_PREFIX
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "$([char]0x2713) API subnet created: $config.API_SUBNET_NAME"
+    }
+    else {
+        Write-Host "Error: Failed to create API subnet"
+        exit 1
+    }  
+}
 
 Write-Host "Integrate Flask App Service with its subnet"
 
-az webapp vnet-integration add `
-  --name $config.FLASK_APP_NAME `
-  --resource-group $config.RESOURCE_GROUP `
-  --vnet $config.VNET_NAME `
-  --subnet $config.FLASK_SUBNET_NAME
+$integratedSubnets = az webapp vnet-integration list --name $config.FLASK_APP_NAME --resource-group $config.RESOURCE_GROUP --query "[].name" -o tsv
+$subnetArray = $integratedSubnets -split "`n" | Where-Object { $_ -ne "" }
+if (Test-ArrayContains -Array $subnetArray -Value $config.FLASK_SUBNET_NAME) {
+    Write-Host "Already integrated"
+} 
+else 
+{
+    az webapp vnet-integration add `
+        --name $config.FLASK_APP_NAME `
+        --resource-group $config.RESOURCE_GROUP `
+        --vnet $config.VNET_NAME `
+        --subnet $config.FLASK_SUBNET_NAME
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) Flask App Service integrated with subnet: $config.FLASK_SUBNET_NAME"
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "$([char]0x2713) Flask App Service integrated with subnet: $config.FLASK_SUBNET_NAME"
+    }
+    else {
+        Write-Host "Error: Failed to integrate Flask App Service with subnet"
+        exit 1
+    }  
 }
-else {
-    Write-Host "Error: Failed to integrate Flask App Service with subnet"
-    exit 1
-}  
+
+
 
 Write-Host "Integrate .NET API with its subnet"
 
-az webapp vnet-integration add `
-  --name $config.API_APP_NAME `
-  --resource-group $config.RESOURCE_GROUP `
-  --vnet $config.VNET_NAME `
-  --subnet $config.API_SUBNET_NAME
+$integratedSubnets = az webapp vnet-integration list --name $config.API_APP_NAME --resource-group $config.RESOURCE_GROUP --query "[].name" -o tsv
+$subnetArray = $integratedSubnets -split "`n" | Where-Object { $_ -ne "" }
+if (Test-ArrayContains -Array $subnetArray -Value $config.API_SUBNET_NAME) {
+    Write-Host "Already integrated"
+} 
+else 
+{
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) API App Service integrated with subnet: $config.API_SUBNET_NAME"
+    az webapp vnet-integration add `
+    --name $config.API_APP_NAME `
+    --resource-group $config.RESOURCE_GROUP `
+    --vnet $config.VNET_NAME `
+    --subnet $config.API_SUBNET_NAME
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "$([char]0x2713) API App Service integrated with subnet: $config.API_SUBNET_NAME"
+    }
+    else {
+        Write-Host "Error: Failed to integrate .NET API with subnet"
+        exit 1
+    }  
 }
-else {
-    Write-Host "Error: Failed to integrate .NET API with subnet"
-    exit 1
-}  
 
 Write-Host "Restrict inbound traffic on the API to Flask's subnet only"
 

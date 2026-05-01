@@ -20,8 +20,6 @@ function Select-FolderPath {
     }
 }
 
-
-
 # Select the Flask app directory
 $selectedPath = Select-FolderPath -Description "Select the Flask app directory"
 

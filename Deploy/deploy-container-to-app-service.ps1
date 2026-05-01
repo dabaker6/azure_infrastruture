@@ -91,7 +91,7 @@ az webapp create `
     --container-image-name "$($config.ACR_NAME).azurecr.io/$IMAGE_NAME_TAG"
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "$([char]0x2713) Web App created: $config.FLASK_APP_NAME"    
+    Write-Host "$([char]0x2713) Web App created: $($config.FLASK_APP_NAME)"    
 }
 else {
     Write-Host "Error: Failed to create Web App"
@@ -263,4 +263,3 @@ else {
 Write-Host "Deployment complete. You can access your Flask app at: https://$($config.FLASK_APP_NAME).azurewebsites.net"
 
 Invoke-RestMethod -Uri "https://$($config.FLASK_APP_NAME).azurewebsites.net/health" | ConvertTo-Json -Depth 10
-
