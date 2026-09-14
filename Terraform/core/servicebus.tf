@@ -8,4 +8,5 @@ resource "azurerm_servicebus_namespace" "main" {
   identity {
     type                    = "SystemAssigned"
     }
+  local_auth_enabled        = "false" 
 }
