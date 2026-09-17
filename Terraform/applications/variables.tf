@@ -4,8 +4,8 @@ variable "product" {
   default     = ""
 }
 
-variable "web_app_image_name" {
-  description = "Front end webapp image name."
+variable "web_app_repo_name" {
+  description = "Front end webapp repo name."
   type        = string
 }
 
@@ -15,7 +15,7 @@ variable "web_app_image_tag" {
   default     = "latest"
 }
 
-variable "cric_api_image_name" {
+variable "cric_api_repo_name" {
   description = "Front end webapp image name."
   type        = string
 }

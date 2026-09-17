@@ -56,8 +56,8 @@ resource "azurerm_linux_web_app" "web_app" {
   site_config {
     always_on = true
     application_stack {
-      docker_image_name   = "${var.web_app_image_name}:${var.web_app_image_tag}"
-      docker_registry_url = "https://${data.terraform_remote_state.core.outputs.container_registry.login_server}"
+      docker_image_name   = "${var.github_org}/${var.web_app_repo_name}:${var.web_app_image_tag}"
+      docker_registry_url = "https://ghcr.io"
     }
     minimum_tls_version                     = "1.3"
     container_registry_use_managed_identity = true
@@ -69,6 +69,12 @@ resource "azurerm_linux_web_app" "web_app" {
   }
   https_only   = true
   app_settings = merge(local.web_app_base_settings, local.web_app_dynamic_settings)
+
+  lifecycle {
+    ignore_changes = [
+      site_config[0].application_stack[0].docker_image_name
+    ]
+  }
 }
 
 # Permission for webapp to pull from ACR
@@ -115,8 +121,8 @@ resource "azurerm_linux_web_app" "cric_api" {
   site_config {
     always_on = true
     application_stack {
-      docker_image_name   = "${var.cric_api_image_name}:${var.cric_api_image_tag}"
-      docker_registry_url = "https://${data.terraform_remote_state.core.outputs.container_registry.login_server}"
+      docker_image_name   = "${var.github_org}/${var.cric_api_repo_name}:${var.cric_api_image_tag}"
+      docker_registry_url = "https://ghcr.io"
     }
     minimum_tls_version                     = "1.3"
     container_registry_use_managed_identity = true
@@ -142,6 +148,12 @@ resource "azurerm_linux_web_app" "cric_api" {
   }
   https_only   = true
   app_settings = merge(local.cric_api_base_settings, local.cric_api_dynamic_settings)
+
+  lifecycle {
+    ignore_changes = [
+      site_config[0].application_stack[0].docker_image_name
+    ]
+  }
 }
 
 # Permission for cric API to pull from ACR
@@ -168,7 +180,7 @@ resource "azurerm_subnet" "cric_api" {
   address_prefixes     = var.personal_website_subnet_cric_api_prefixes
 
   delegation {
-    name = "${var.product}-${var.cric_api_image_name}-delegation"
+    name = "${var.product}-${var.cric_api_repo_name}-delegation"
 
     service_delegation {
       name    = "Microsoft.Web/serverFarms"
@@ -231,6 +243,11 @@ resource "azurerm_linux_web_app" "scaling_api" {
   https_only   = true
   app_settings = merge(local.scaling_api_base_settings, local.scaling_api_dynamic_settings)
 
+  lifecycle {
+    ignore_changes = [
+      site_config[0].application_stack[0].docker_image_name
+    ]
+  }
 }
 
 # Assign ACR pull to the scaling api webapp

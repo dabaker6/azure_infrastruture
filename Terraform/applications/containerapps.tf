@@ -54,6 +54,12 @@ resource "azurerm_container_app" "scaling" {
     type         = "SystemAssigned, UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.aca_scaling_worker.id]
   }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].container[0].name
+    ]
+  }
 }
 
 # Permission for managed identity to pull from ACR in container app.
