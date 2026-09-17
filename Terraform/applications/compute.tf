@@ -59,9 +59,7 @@ resource "azurerm_linux_web_app" "web_app" {
       docker_image_name   = "${var.github_org}/${var.web_app_repo_name}:${var.web_app_image_tag}"
       docker_registry_url = "https://ghcr.io"
     }
-    minimum_tls_version                     = "1.3"
-    container_registry_use_managed_identity = true
-
+    minimum_tls_version = "1.3"
   }
   virtual_network_subnet_id = azurerm_subnet.web_app.id
   identity {
@@ -75,15 +73,6 @@ resource "azurerm_linux_web_app" "web_app" {
       site_config[0].application_stack[0].docker_image_name
     ]
   }
-}
-
-# Permission for webapp to pull from ACR
-resource "azurerm_role_assignment" "web_app_acr" {
-  scope                = data.terraform_remote_state.core.outputs.container_registry.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_linux_web_app.web_app.identity[0].principal_id
-
-  depends_on = [time_sleep.wait_for_webapp]
 }
 
 # Permission for managed identity to reset web app
@@ -124,8 +113,8 @@ resource "azurerm_linux_web_app" "cric_api" {
       docker_image_name   = "${var.github_org}/${var.cric_api_repo_name}:${var.cric_api_image_tag}"
       docker_registry_url = "https://ghcr.io"
     }
-    minimum_tls_version                     = "1.3"
-    container_registry_use_managed_identity = true
+    minimum_tls_version = "1.3"
+
     ip_restriction {
       action                    = "Allow"
       priority                  = 100
@@ -154,15 +143,6 @@ resource "azurerm_linux_web_app" "cric_api" {
       site_config[0].application_stack[0].docker_image_name
     ]
   }
-}
-
-# Permission for cric API to pull from ACR
-resource "azurerm_role_assignment" "cric_api_acr" {
-  scope                = data.terraform_remote_state.core.outputs.container_registry.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_linux_web_app.cric_api.identity[0].principal_id
-
-  depends_on = [time_sleep.wait_for_webapp]
 }
 
 # Permission for managed identity to reset web app
@@ -214,12 +194,12 @@ resource "azurerm_linux_web_app" "scaling_api" {
 
   site_config {
     always_on = true
-    application_stack {    
+    application_stack {
       docker_image_name   = "${var.github_org}/${var.scaling_repo}-api:${var.scaling_worker_image_tag}"
       docker_registry_url = "https://ghcr.io"
     }
-    minimum_tls_version                     = "1.3"
-    container_registry_use_managed_identity = true
+    minimum_tls_version = "1.3"
+
     ip_restriction {
       action                    = "Allow"
       priority                  = 100
@@ -248,15 +228,6 @@ resource "azurerm_linux_web_app" "scaling_api" {
       site_config[0].application_stack[0].docker_image_name
     ]
   }
-}
-
-# Assign ACR pull to the scaling api webapp
-resource "azurerm_role_assignment" "scaling_api_acr" {
-  scope                = data.terraform_remote_state.core.outputs.container_registry.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_linux_web_app.scaling_api.identity[0].principal_id
-
-  depends_on = [time_sleep.wait_for_webapp]
 }
 
 # Permission for managed identity to reset web app

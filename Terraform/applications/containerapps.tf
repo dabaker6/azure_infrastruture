@@ -5,12 +5,6 @@ resource "azurerm_container_app" "scaling" {
   resource_group_name          = data.terraform_remote_state.core.outputs.resource_group.name
   revision_mode                = "Single"
 
-  # Configure ACR authentication
-  registry {
-    server   = data.terraform_remote_state.core.outputs.container_registry.login_server
-    identity = azurerm_user_assigned_identity.aca_scaling_worker.id
-  }
-
   template {
     container {
       name   = "${var.scaling_name}-worker"
@@ -62,14 +56,7 @@ resource "azurerm_container_app" "scaling" {
   }
 }
 
-# Permission for managed identity to pull from ACR in container app.
-resource "azurerm_role_assignment" "container_app_acr_pull" {
-  scope                = data.terraform_remote_state.core.outputs.container_registry.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_user_assigned_identity.aca_scaling_worker.principal_id
-}
-
-# Permission for managed identity to push to ACR in github actions workflow. In it's own file as common across compute and container apps
+# Permission for managed identity to push to Container Apps in github actions workflow. In it's own file as common across compute and container apps
 resource "azurerm_role_assignment" "github_actions_oidc_aca" {
   scope                = azurerm_container_app.scaling.id
   role_definition_name = "Container Apps Contributor"
