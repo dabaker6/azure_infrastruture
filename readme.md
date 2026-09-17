@@ -109,3 +109,20 @@ Followed for naming conventions:
 https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
 
 Important to gunicorn to requirements.txt
+
+## Terraform
+
+ASP, webapp, acr, rg, vnet, api
+
+- Tricky to get scope correct for cosmosdb - was not just db/mydb/colls/mycoll, needed the account name in front
+- private endpoint considered for service bus, but cost not worth it.
+- lack of docs for ip_restriction?
+- separate folders 
+- DNS zones - create the main zone, rest will be manual as this is usually an infrequent change
+- OIDC for github, need to assign roles. MS helpfully state assign the appropriate role (https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect), whatever the yml has, for webapps need ACR push, pull and website contributor, for container apps need ACR push, pull and website contributor. So:
+OIDC MI needs ACR push as github builds then pushes the image to ACR
+each servie, webapp, container etc... needs pull to get the image
+OICE MI then needs deploy, restart etc... if needed
+- ACR tasks build vs github runner, for least privlages github good as only need ACRPush
+
+COntainer apps - appear to have service bus data receiver twice
