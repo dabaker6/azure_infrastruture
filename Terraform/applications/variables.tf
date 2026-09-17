@@ -6,7 +6,7 @@ variable "product" {
 
 variable "web_app_image_name" {
   description = "Front end webapp image name."
-  type        = string  
+  type        = string
 }
 
 variable "web_app_image_tag" {
@@ -32,19 +32,19 @@ variable "cric_api_cosmos_permission" {
 }
 
 variable "cric_api_version" {
-  type    = string
+  type = string
 }
 
 variable "personal_website_subnet_web_app_prefixes" {
-  type    = list(string)
+  type = list(string)
 }
 
 variable "personal_website_subnet_cric_api_prefixes" {
-  type    = list(string)
+  type = list(string)
 }
 
 variable "scaling_name" {
-  type    = string
+  type = string
 }
 
 variable "scaling_worker_message_count" {
@@ -88,7 +88,7 @@ variable "scaling_api_image_tag" {
 }
 
 variable "scaling_api_version" {
-  type    = string
+  type = string
 }
 
 variable "scaling_api_background_polling" {
@@ -97,6 +97,21 @@ variable "scaling_api_background_polling" {
 }
 
 variable "scaling_api_polling" {
-  type     = string
-  default  = "3000"
+  type    = string
+  default = "3000"
+}
+
+variable "websites_port" {
+  type    = number
+  default = 8000
+}
+
+variable "github_org" {
+  type    = string
+  default = "dabaker6"
+}
+
+variable "scaling_repo" {
+  type    = string
+  default = "aca_scaling_api"
 }
