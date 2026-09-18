@@ -13,14 +13,6 @@ output "service_plan" {
     }
 }
 
-output "container_registry" {
-  value = {
-    name            = azurerm_container_registry.main.name
-    login_server    = azurerm_container_registry.main.login_server
-    id              = azurerm_container_registry.main.id
-    }
-}
-
 output "virtual_network" {
   value = {
     name            = azurerm_virtual_network.main.name
